@@ -33,9 +33,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.RENDER_EXTERNAL_URL 
-                     ? `${process.env.RENDER_EXTERNAL_URL}/swagger` 
-                     : `http://localhost:${PORT}/swagger`
+                url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`  // Correct server URL
             },
         ],
     },
@@ -43,9 +41,11 @@ const swaggerOptions = {
 };
 
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
+
+// Serve Swagger UI at /swagger
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-// Routes
+// API Routes
 app.use('/api', routers);
 
 // Only open browser in development
@@ -54,7 +54,7 @@ const shouldOpenBrowser = !process.argv.includes('--no-open') && process.env.NOD
 // Bind to 0.0.0.0 for Render hosting
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}/swagger`);
-    
+
     if (shouldOpenBrowser) {
         const url = `http://localhost:${PORT}/swagger`;
         switch (process.platform) {
