@@ -4,27 +4,25 @@ import dotenv from 'dotenv';
 import routers from './routes/routes.js';
 import dbCon from "./utlis/db.js";
 import { exec } from 'child_process';
-
-// Import Swagger packages
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
-const PORT = process.env.PORT || 8000;
-
 dotenv.config();
+
+const PORT = process.env.PORT || 8000;
 const app = express();
 dbCon();
 
-// Enhanced CORS setup
+// CORS Setup
 app.use(cors({
-    origin: '*',
+    origin: process.env.RENDER_EXTERNAL_URL || '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-// Swagger setup
+// Swagger Setup
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -35,7 +33,9 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: `http://localhost:${PORT}`,
+                url: process.env.RENDER_EXTERNAL_URL 
+                     ? `${process.env.RENDER_EXTERNAL_URL}/swagger` 
+                     : `http://localhost:${PORT}/swagger`
             },
         ],
     },
@@ -45,21 +45,23 @@ const swaggerOptions = {
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
+// Routes
 app.use('/api', routers);
 
-const shouldOpenBrowser = !process.argv.includes('--no-open');
+// Only open browser in development
+const shouldOpenBrowser = !process.argv.includes('--no-open') && process.env.NODE_ENV !== 'production';
 
-app.listen(PORT, 'localhost', () => {
+// Bind to 0.0.0.0 for Render hosting
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}/swagger`);
-
+    
     if (shouldOpenBrowser) {
         const url = `http://localhost:${PORT}/swagger`;
         switch (process.platform) {
             case 'darwin': exec(`open ${url}`); break;
             case 'win32': exec(`start ${url}`); break;
             case 'linux': exec(`xdg-open ${url}`); break;
-            default: console.log('Unsupported platform');
+            default: console.log('Swagger UI available at:', url);
         }
     }
 });
-
