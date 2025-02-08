@@ -13,13 +13,24 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 dbCon();
 
+// origin: process.env.RENDER_EXTERNAL_URL || '*',
 // CORS Setup
+const allowedOrigins = [
+    process.env.RENDER_EXTERNAL_URL,   // Render deployment URL (live server)
+    '*',           // Local React development URL
+];
+
 app.use(cors({
-    origin: process.env.RENDER_EXTERNAL_URL || '*',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);  // Allow if origin is in allowedOrigins or origin is undefined
+        } else {
+            callback(new Error(`CORS policy violation: ${origin} is not allowed by CORS`));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.use(express.json());
 
 // Swagger Setup
