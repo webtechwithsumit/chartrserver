@@ -13,24 +13,27 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 dbCon();
 
-// origin: process.env.RENDER_EXTERNAL_URL || '*',
-// CORS Setup
+// CORS Setup to Allow Both Localhost and Render
 const allowedOrigins = [
-    process.env.RENDER_EXTERNAL_URL,   // Render deployment URL (live server)
-    '*',           // Local React development URL
+    process.env.RENDER_EXTERNAL_URL,  // Render deployment URL (live)
+    'http://localhost:3000',          // Local React app (development)
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);  // Allow if origin is in allowedOrigins or origin is undefined
+            callback(null, true);
         } else {
             callback(new Error(`CORS policy violation: ${origin} is not allowed by CORS`));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Include OPTIONS for preflight requests
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight OPTIONS requests globally
+app.options('*', cors());
+
 app.use(express.json());
 
 // Swagger Setup
@@ -44,7 +47,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`  // Correct server URL
+                url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`
             },
         ],
     },
