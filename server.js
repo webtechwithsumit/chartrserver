@@ -13,13 +13,24 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 dbCon();
 
+// origin: process.env.RENDER_EXTERNAL_URL || '*',
 // CORS Setup
+const allowedOrigins = [
+    process.env.RENDER_EXTERNAL_URL,   // Render deployment URL (live server)
+    'http://localhost:3000',           // Local React development URL
+];
+
 app.use(cors({
-    origin: process.env.RENDER_EXTERNAL_URL || '*',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);  // Allow if origin is in allowedOrigins or origin is undefined
+        } else {
+            callback(new Error(`CORS policy violation: ${origin} is not allowed by CORS`));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.use(express.json());
 
 // Swagger Setup
@@ -33,7 +44,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`  // Remove `/swagger`
+                url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`  // Correct server URL
             },
         ],
     },
@@ -41,9 +52,11 @@ const swaggerOptions = {
 };
 
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
-app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-// Routes
+// Serve Swagger UI at /swagger
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
+// API Routes
 app.use('/api', routers);
 
 // Only open browser in development
@@ -51,10 +64,10 @@ const shouldOpenBrowser = !process.argv.includes('--no-open') && process.env.NOD
 
 // Bind to 0.0.0.0 for Render hosting
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    
+    console.log(`Server running on http://localhost:${PORT}/swagger`);
+
     if (shouldOpenBrowser) {
-        const url = `http://localhost:${PORT}`;
+        const url = `http://localhost:${PORT}/swagger`;
         switch (process.platform) {
             case 'darwin': exec(`open ${url}`); break;
             case 'win32': exec(`start ${url}`); break;
