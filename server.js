@@ -16,7 +16,7 @@ dbCon();
 // CORS Setup to Allow Both Localhost and Render
 const allowedOrigins = [
     process.env.RENDER_EXTERNAL_URL,  // Render deployment URL (live)
-    'http://localhost:3000',          // Local React app (development)
+    'https://chhartr.netlify.app/',          // Local React app (development)
 ];
 
 app.use(cors({
