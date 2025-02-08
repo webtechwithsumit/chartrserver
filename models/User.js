@@ -36,7 +36,12 @@ const userSchema = new mongoose.Schema({
     randomId: {
         type: String,
         required: true
-    }
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        index: { expires: '5h' } // Automatically delete after 5 hours
+      }
    
 }, { timestamps: true })
 

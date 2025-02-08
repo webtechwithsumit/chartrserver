@@ -1,19 +1,24 @@
 // import ObjectId  from `('mongodb').ObjectId`;
 import usermodel from "../models/User.js"
+import cron from 'node-cron';
+
+
 const create = async (req, res) => {
+  debugger;
   try {
-    const { busstart, bus, price, quantity, time, ending, backgroundColor, numberplate, randomId } = req.body
+    const { busstart, bus, price, quantity, time, ending, backgroundColor, numberplate, randomId } = req.body;
     const Newuser = new usermodel({
       busstart, bus, price, quantity, time, ending, backgroundColor, numberplate, randomId
-    })
-    await Newuser.save()
+    });
 
-    res.status(200).json({ success: true, message: "Record Added Successfully.", Newuser })
+    await Newuser.save();
+    res.status(201).json({ success: true, message: "Record Added Successfully." });
   } catch (error) {
-    console.log(error)
-    return res.status(500).json({ success: false, message: "Interl server eror" })
+    console.log(error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
-}
+};
+
 
 ///////Read api in decending order
 const get = async (req, res) => {
@@ -62,7 +67,7 @@ const getsingledata = async (req, res) => {
     const _id = req.params._id
     // console.log(userId)
     // const users = await usermodel.findOne(userId,req.body , {new:true})
-    const users = await usermodel.findOne({ _id: _id})
+    const users = await usermodel.findOne({ _id: _id })
     if (!users) {
       return res.status(404).json({ success: false })
     }
@@ -105,6 +110,25 @@ const Delete = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
+
+
+
+
+
+const deleteOldDocuments = async () => {
+  try {
+    const count = await usermodel.countDocuments();
+    if (count > 10) {
+      await usermodel.deleteMany({
+        createdAt: { $lt: new Date(Date.now() - 5 * 60 * 60 * 1000) },
+        $where: `this.collection.countDocuments() > 10`
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting old documents:', error);
+  }
+};
+cron.schedule('0 * * * *', deleteOldDocuments);
 
 export { create, get, Updated, Delete, getsingle, getsingledata }
 
