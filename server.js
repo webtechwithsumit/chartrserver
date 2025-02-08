@@ -14,23 +14,28 @@ const app = express();
 dbCon();
 
 // origin: process.env.RENDER_EXTERNAL_URL || '*',
-// CORS Setup
+// CORS Setup to Allow Localhost, Render, and Netlify
 const allowedOrigins = [
-    process.env.RENDER_EXTERNAL_URL,   // Render deployment URL (live server)
-    'http://localhost:3000',           // Local React development URL
+    process.env.RENDER_EXTERNAL_URL,
+    'http://localhost:3000',
+    'https://chhartr.netlify.app'
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);  // Allow if origin is in allowedOrigins or origin is undefined
+            callback(null, true);
         } else {
             callback(new Error(`CORS policy violation: ${origin} is not allowed by CORS`));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight OPTIONS requests globally
+app.options('*', cors());
+
 app.use(express.json());
 
 // Swagger Setup
