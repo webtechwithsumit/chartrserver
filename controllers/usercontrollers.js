@@ -117,17 +117,23 @@ const Delete = async (req, res) => {
 
 const deleteOldDocuments = async () => {
   try {
-    const count = await usermodel.countDocuments();
-    if (count > 10) {
-      await usermodel.deleteMany({
-        createdAt: { $lt: new Date(Date.now() - 5 * 60 * 60 * 1000) },
-        $where: `this.collection.countDocuments() > 10`
-      });
+    const totalDocs = await usermodel.countDocuments();
+
+    if (totalDocs > 10) {
+      const newestDocs = await usermodel.find().sort({ createdAt: -1 }).limit(10).select('_id');
+      const newestIds = newestDocs.map(doc => doc._id);
+
+      const result = await usermodel.deleteMany({ _id: { $nin: newestIds } });
+
+      console.log(`${result.deletedCount} old documents deleted.`);
+    } else {
+      console.log('No documents deleted. Total count is less than or equal to 10.');
     }
   } catch (error) {
     console.error('Error deleting old documents:', error);
   }
 };
+
 cron.schedule('0 * * * *', deleteOldDocuments);
 
 export { create, get, Updated, Delete, getsingle, getsingledata }
